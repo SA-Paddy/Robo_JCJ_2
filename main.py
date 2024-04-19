@@ -1,11 +1,43 @@
-#Check Canvas argument to establish why this is causing an instance window to remain
+# We would recommend you run this project through PyCharm.
+# PyCharm community is  free to download from their download section on their website
+# Import the relevant libraries or python files that will be needed to run this code
+# These are needed due to dependencies on them for functions or classes or data processing types
+# This whole project runs in a virtual environment - so until it is packaged into an .exe
+# We will be required to install some of the packages everytime we look to run on a new computer
+# Or everytime we run it on an LSBU computer
+# First and foremost navigate to the 'terminal' window at the bottom of PyCharm
+# Either copy and paste the following or type it in the terminal window:
+# python -m pip install --upgrade pip
+# Once the latest pip installer is installed copy or type  the following:
+# git clone https://github.com/LSBU-Electronics-Lab/ApiTCP_Python_NiryoOne.git
+# This will add a new folder in your project called ApiTCP_Python_NiryoOne
+# Right click on this folder, go to the bottom of the menu and mark directory as a sources root
+# Expand the ApiTCP_Python_NiryoOne folder and find the sub-folder named niryo_one_tcp_client
+# Right click on this folder, go to the bottom of  the menu and mark directory as a sources root
+# Next go back to the terminal and type or copy the following
+# (for each one - wait for it to finish installing before moving  on to the next):
+# pip install numpy
+# pip install serial
+# pip install seaborn
+# pip install pandas
+# You may get error messages saying that it could not find a version that satisfies
+# If you do - dont stress - this just means that the latest version is already probably installed
 
+# ------------ potential errors
+#    You must go through and consider error handling throughout
+# ------------
+
+from niryo_one_tcp_client import *
 import tkinter
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import serial
 from serial.tools import list_ports
-import test_generator
+import math
+import time
 
 #Create Required Variables
 
@@ -76,7 +108,32 @@ def f_fetch_port():
     com_window.mainloop()
 
 def f_connect_attempt():
-    return
+    global robot_connected
+    global robot
+    robot_connected = False
+    robot = NiryoOneClient()
+    sleep_joints = [0.0, 0.55, -1.2, 0.0215024563846, -0.296705973, -0.070860367631]
+
+    try:
+        robot.connect(ip_address)
+        robot_connected = True
+        #remove_tools_message = tkinter.messagebox.askokcancel(title='Remove Tooling', message='Please ensure all tooling'
+                                                                                              #' has been removed from'
+                                                                                              #' the TCP before clicking '
+                                                                                              #' ok. Failure to do so'
+                                                                                              #' will result in damage'
+                                                                                              #' to the robotic arm.',
+                                                              #icon=Warning)
+        #if remove_tools_message:
+        robot.calibrate(CalibrateMode.AUTO)
+        #robot.move_pose(-.0, -0.44, 0.15, -0.041, 0.758, -1.563)
+        robot.move_pose(0.15, 0., 0.2, -0.041, 0.758, -1.563)
+        time.sleep(1)
+        robot.move_joints(*sleep_joints)
+
+    except Exception as e:
+        robot_connected = False
+
 
 def f_set_test():
 
@@ -94,8 +151,6 @@ def f_set_test():
         resolution_value = resolution_entry.get()
         resolution = int(resolution_value)
 
-        test_generator.main(width_mm, length_mm, resolution, test_frame)
-
         set_test_window.destroy()
 
         i_width = tkinter.Label(info_frame, text=width_mm)
@@ -106,6 +161,8 @@ def f_set_test():
 
         i_resolution = tkinter.Label(info_frame, text=resolution)
         i_resolution.grid(row=4, column=1, padx=(20, 30), pady=(5, 5))
+
+        generate_test_data(width_mm, length_mm, resolution)
 
 
 
@@ -121,24 +178,96 @@ def f_set_test():
     height_label = tkinter.Label(set_test_window, text='Enter Test Piece Length in mm: ')
     height_label.grid(row=1, column=0, padx=(10, 5), pady=(5, 5))
 
-    resolution_label = tkinter.Label(set_test_window, text='Enter Number of Test Points: ')
+    resolution_label = tkinter.Label(set_test_window, text='Enter Resolution (mm/test): ')
     resolution_label.grid(row=2, column=0, padx=(10, 5), pady=(5, 10))
 
     #Create the input boxes
     width_entry = tkinter.Entry(set_test_window)
     width_entry.grid(row=0, column=1, padx=(5, 10), pady=(10, 5))
+    width_entry.insert(0, 0)
 
     height_entry = tkinter.Entry(set_test_window)
     height_entry.grid(row=1, column=1, padx=(5, 10), pady=(5, 5))
+    height_entry.insert(0, 0)
 
     resolution_entry = tkinter.Entry(set_test_window)
     resolution_entry.grid(row=2, column=1, padx=(5, 10), pady=(5, 7.5))
+    resolution_entry.insert(0, 0)
 
     #Create the Submit Button
     set_test_save_btn = tkinter.Button(set_test_window, text='Save and Close', command=test_save)
     set_test_save_btn.grid(row=3, column=1, padx=(5, 10), pady=(7.5, 10))
 
     set_test_window.mainloop()
+
+def generate_test_data(width_mm, length_mm, resolution):
+    #Ensure that the contents of  the test_frame are empty before plotting to it
+    for widget in test_frame.winfo_children():
+        widget.destroy()
+
+    # declare some globals
+    global coordinates
+    coordinates = []
+
+    # error handling
+    if width_mm <= 0 or length_mm <= 0 or resolution <= 0:
+        size_error = tkinter.messagebox.showerror(title='Invalid Width Specified', message='Invalid prameters '
+                                                                                           'specified '
+                                                                                            'width and length must be '
+                                                                                           'greater than'
+                                                                                            ' 0. Resolution must be '
+                                                                                           'greater than 0 and integer'
+                                                                                           ' values. '
+                                                                                           'Please update input.')
+    else:
+        # convert samples into number of data points x and y
+        # Make sure the data type is an integer
+        x_data_points = int(width_mm / resolution)
+        y_data_points = int(width_mm / resolution)
+        #resolution = math.sqrt(samples)
+
+        # convert width and length to m
+        width = width_mm / 1000
+        length = length_mm / 1000
+
+        # Because our robot sits in the centre of the piece (x-axis) - we need to adjust our coordinates
+        # accordingly. This is done using the midpoint as an adjustment value
+        mid_width = width / 2
+
+        # Create a for loop that iterates through the range given by 1 to max-1
+        # This is so that we have an offset from the left and right edges by at least the resolution
+        # Specified by the user
+        for i in range(1, x_data_points - 1):
+            # Create a for loop that iterates through the range given by 1 to max-1
+            # This is so that we have an offset from the top and bottom edges by at least the resolution
+            # Specified by the user
+            for j in range(1, y_data_points - 1):
+                # Create x value in m (Niryo one only works in m) and adjust
+                x_value = round((i * (resolution / 1000) - mid_width), 2)
+                # Create y value in m (Niryo one only works in m)
+                y_value = round((j * (resolution / 1000)), 2)
+                # Append the data to the coordinates list, ensure data type is float as Niryo one only accepts float
+                coordinates.append((float(x_value), float(y_value)))
+                
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal', 'box')
+        ax.grid(True)
+        ax.scatter(*zip(*coordinates), color='red', s=8)
+        ax.set_title('Porposed Test')
+        ax.set_ylabel('Length (y) Coordinates')
+        ax.set_xlabel('Width (x) Coordinates')
+
+        canvas = FigureCanvasTkAgg(fig, master=test_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        toolbar = NavigationToolbar2Tk(canvas, test_frame)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        
+
+
 
 
 def f_run_test():
@@ -151,7 +280,18 @@ def f_load_test():
     return
 
 def f_close():
-    return
+    if robot_connected == False:
+        close_error = tkinter.messagebox.showerror(title='No connection to close', message='There has been no'
+                                                                                           ' connection established'
+                                                                                           ' to close.')
+    else:
+        sleep_joints = [0.0, 0.55, -1.2, 0.0215024563846, -0.296705973, -0.070860367631]
+        # So we send the robot to the sleep_joints position
+        robot.move_joints(*sleep_joints)
+        # We set learning mode to true (this is what basically releases the torque in the motors)
+        robot.set_learning_mode(True)
+        # We disconnect from the robot
+        robot.quit()
 
 #Create the Root Window
 root = Tk()
