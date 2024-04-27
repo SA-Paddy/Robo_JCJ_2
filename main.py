@@ -34,9 +34,11 @@ import tkinter
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import serial
+import pandas
 from serial.tools import list_ports
 import math
 import time
@@ -67,12 +69,15 @@ global number_of_drive_pulses
 global drive_distance
 global update_progress
 global prog_update_first_phase
+global message_log
 
 #Set non tkinter variables values where required
 ip_address=''
 robot_connected = False
 robot = NiryoOneClient()
 tool_arm_length = 0.12
+test_data_final = []
+message_log = []
 
 
 
@@ -413,6 +418,7 @@ def f_connect_attempt():
                         far_limit_trig = False
                         near_limit_trig = True
 
+
                 # Now that we know we have reached the far limit switch, we can work backwards to the near limits switch
                 # Create a loop that will continuously run until the condition has been met
                 while near_limit_trig == False:
@@ -439,6 +445,7 @@ def f_connect_attempt():
                         drive_distance = drive_revolutions * mm_per_revolution
                         update_message_box(f'linear rail drive distance:  {drive_distance}mm')
                     else:
+
                         pass
 
 
@@ -457,6 +464,8 @@ def f_connect_attempt():
     # running the com port data attainment
     # The way we achieve this is by allowing the com port data attainment to result in an exception where we present
     # the user with a choice. their choice then determines whether we re-attempt connection or just pass on.
+    first_data_pass_check = False
+
     while serial_fail_choice:
 
         # We use a try statement to enable us to deal with exceptions (errors) graciously
@@ -471,7 +480,26 @@ def f_connect_attempt():
             update_message_box('Attempting connection to Arduino through Serial')
             arduinoData = serial.Serial(selected_com_port, selected_baudrate)
             time.sleep(6)
+            print("arduino checked in")
+
+            # Check to see if there is data available
+            if arduinoData.inWaiting() > 0 and not first_data_pass_check:
+                # Strip the data packet down to only a float
+                # Read the data packet as bytes
+                data_bytes = arduinoData.readline()
+                # Decode the bytes to string using utf-8 and strip any newline characters
+                datapacket = data_bytes.decode('utf-8').strip('\r\n')
+
+                print("Received data from Arduino:", datapacket)
+
+                # Close the connection to the Arduino
+                #arduinoData.close()
+                # serial.Serial('com36', 9600).close()
+                time.sleep(3)
+                print("Arduino got data")
+                first_data_pass_check = True
             update_message_box('Connection seems to have been successful')
+            break
 
         # In our exception clause we update the user through the message box as to the failure
         # Then we offer them a choice using an askyesno messagebox which returns boolean values
@@ -479,6 +507,7 @@ def f_connect_attempt():
         # should be continued or broken.
         except Exception as e:
             update_message_box('Connection attempt failed.')
+            print(e)
             serial_fail_choice = tkinter.messagebox.askyesno(title='Serial Connection Failure', message='Connection to'
                                                                                                     ' serial was '
                                                                                                     'unsuccessful. '
@@ -696,6 +725,9 @@ def f_run_test():
 
     # We use a try statement to enable us to catch any errors and handle them gracefully.
     try:
+        # First ensure that the progress bar has been set to zero
+        progress_bar.set(0)
+
         # Let the user know that we are breaking the movements down into stages.
         # Call on the split coordinates function to break down the coordinates.
         # We do not need to pass anything to the function or from the function as coordinates is a global variable.
@@ -706,7 +738,7 @@ def f_run_test():
         # Update user that the first phase of movements being instructed.
         # Call on the first phase move function to undertake the first stage.
         # Update the user that the movement set is complete.
-        update_message_box('First movement phase instructions being sent to the robot')
+        update_message_box('First instruction set being sent to the robot')
         first_phase_move()
         update_message_box('First movement phase completed')
 
@@ -734,10 +766,7 @@ def first_phase_move():
 
     # Create a for loop that will itterate over the move_one_coordinates list and extract the first value in each tuple
     # as x and the second as y.
-    for index, (x, y) in move_one_coordinates:
-
-        # For each set of coordinates print a message telling the user where the robot is moving to.
-        update_message_box(f'attempting to move to x: {x} and y: {y}')
+    for (x, y) in move_one_coordinates:
 
         # The coordinates require adjustment from the robots frame of reference to the real world.
         # Additionally, an adjustment is required to account for the tool extending beyond the TCP.
@@ -748,17 +777,25 @@ def first_phase_move():
             sine_angle = math.sin(angle_radians)
             x_adjustment = tool_arm_length * cosine_angle
             y_adjustment = tool_arm_length * sine_angle
-            adjusted_x = x - x_adjustment
-            adjusted_y = ((y-0.37)+y_adjustment)
+            if x < 0:
+                adjusted_x = x + x_adjustment
+                adjusted_y = ((y - 0.41) - y_adjustment)
+            else:
+                adjusted_x = x - x_adjustment
+                adjusted_y = ((y-0.41) + y_adjustment)
         elif (x==0) and (y!=0):
             adjusted_x = x
-            adjusted_y = ((y-0.37) + tool_arm_length)
+            adjusted_y = ((y-0.41) + tool_arm_length)
         else:
             adjusted_x = tool_arm_length
-            adjusted_y = y - 0.37
+            adjusted_y = y - 0.41
 
         # With the coordinates having been adjusted - we can now try a robot move instruction, capturing any exceptions.
         try:
+
+            # For each set of coordinates print a message telling the user where the robot is moving to.
+            update_message_box(f'attempting to move to real x: {x} and y: {y}')
+            update_message_box(f'Robot coordinates x: {adjusted_x} and y: {adjusted_y}')
 
             # Per the API instruction set, we pass the x, y and z coordinates in m.
             # Instead of directly attributing the values, however, we utilise variables.
@@ -787,7 +824,7 @@ def first_phase_move():
             # Update the local variable to count the itteration number we are on.
             # Update the progress bar
             update_message_box(f'Sensor value reads {datapacket}')
-            test_data_final.append(x, y, sensor_value)
+            test_data_final.append((x, y, sensor_value))
             phase_one_move_number += 1
             prog_update_first_phase=(phase_one_move_number * 100) / number_of_steps
             update_progress.set(prog_update_first_phase)
@@ -799,11 +836,34 @@ def first_phase_move():
             tkinter.messagebox.showerror(title='test error', message='Test procedure experienced a critical '
                                                                      'failure - please retry.')
             update_message_box('Test cycle cancelled due to error')
+            print(e)
             break
 
 
 def f_save_test():
-    return
+
+    global test_data_final
+
+    save_dialog = tkinter.Toplevel()
+
+    # Output the data as a pandas data frame so that it can be saved to csv
+    df = pandas.DataFrame(test_data_final, columns=['x_coordinate', 'y_coordinate', 'sensor_value'])
+
+    # Ask the user where to save
+    csv_file = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+
+    # If the user exits or cancels then cancel the operation
+    if not csv_file:
+        print("Save canceled. Exiting.")
+        exit()
+
+    # Save the CSV
+    df.to_csv(csv_file, index=False)
+
+    save_dialog.destroy()
+
+
+
 
 def f_load_test():
     return
@@ -822,8 +882,14 @@ def f_close():
         robot.set_learning_mode(True)
         # We disconnect from the robot
         robot.quit()
+        print(message_log)
 
 def update_message_box(message):
+
+    # Create a message log
+    global message_log
+    message_log.append((message))
+
     # Enable the Text widget to update its contents
     message_print_box.config(state='normal')
     # Insert the new message at the end of the Text widget
@@ -843,6 +909,7 @@ def update_message_box(message):
 root = Tk()
 root.title("Robo_JCJ")
 root.iconbitmap('robot.ico')
+root.geometry('1330x1000')
 root.columnconfigure(0, weight=1)
 root.columnconfigure(1, weight=1)
 root.rowconfigure(0, weight=1)
@@ -913,8 +980,8 @@ progress_label.grid(row=6, column=0, padx=(30, 20), pady=(5, 5))
 progress_bar = tkinter.ttk.Progressbar(info_frame, orient='horizontal', length=200, variable=update_progress)
 progress_bar.grid(row=6, column=1, padx=(20, 30), pady=(5, 5))
 
-message_print_box = tkinter.Text(info_frame, height=5, width=53)
-message_print_box.grid(row=7, column=0, columnspan=2, padx=(30, 30), pady=(5, 10))
+message_print_box = tkinter.Text(info_frame, height=5, width=74)
+message_print_box.grid(row=7, column=0, columnspan=2, padx=(10, 10), pady=(5, 10))
 message_print_box.config(state='disabled')
 
 root.mainloop()
