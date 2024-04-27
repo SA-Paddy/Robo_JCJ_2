@@ -42,6 +42,9 @@ import pandas
 from serial.tools import list_ports
 import math
 import time
+import seaborn
+import PIL
+from PIL import Image, ImageTk
 
 #Create global variables - The reason why so many are being created and used, is that there was a persistent error
 #occuring when trying to pass values into and out of functions. The source of the error could not be established
@@ -694,7 +697,7 @@ def generate_test_data(width_mm, length_mm, resolution):
         # Set a grid over the plot.
         # Use a scatter plot from the coordinates list which you unzip. Make the plot points red and size 8
         # Give the plot the title of Proposed Test, as well as naming the x and y axis.
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(6.15, 5))
         ax.set_aspect('equal', 'box')
         ax.grid(True)
         ax.scatter(*zip(*coordinates), color='red', s=8)
@@ -842,30 +845,75 @@ def first_phase_move():
 
 def f_save_test():
 
+    # Re-declare global variables to stop function from creating local ones with the same names
     global test_data_final
 
+    # Create a new window which we will call the save_dialog
     save_dialog = tkinter.Toplevel()
 
-    # Output the data as a pandas data frame so that it can be saved to csv
+    # Output the data as a pandas data frame so that it can be saved to csv, call the data frame df
     df = pandas.DataFrame(test_data_final, columns=['x_coordinate', 'y_coordinate', 'sensor_value'])
 
-    # Ask the user where to save
-    csv_file = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+    # Ask the user where to save using a filedialog
+    csv_file_save = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
 
-    # If the user exits or cancels then cancel the operation
-    if not csv_file:
-        print("Save canceled. Exiting.")
-        exit()
+    # If the user exits or cancels then update on the message box
+    if not csv_file_save:
+        update_message_box("Save canceled. Exiting.")
+        save_dialog.destroy()
 
-    # Save the CSV
-    df.to_csv(csv_file, index=False)
+    # Save the CSV and update to say that the file was saved
+    df.to_csv(csv_file_save, index=False)
 
+    # Close down the window once completed and update the user
+    update_message_box('Save completed')
     save_dialog.destroy()
 
-
-
-
 def f_load_test():
+
+    # Create a new window which we will call the load_dialog
+    load_dialog = tkinter.Toplevel()
+
+    # Ask the user to select a CSV file using a file dialog
+    csv_file_load = filedialog.askopenfilename(title="Select CSV File", filetypes=[("CSV files", "*.csv")])
+
+    # Check if the user selected a file, if not update user and exit process
+    if not csv_file_load:
+
+        update_message_box("No file selected. Exiting.")
+        load_dialog.destroy()
+
+    else:
+
+        # Ensure that the contents of the results_frame are empty before plotting to it
+        for widget in results_frame.winfo_children():
+            widget.destroy()
+
+        # load the CSV data into a panda data frame
+        df = pandas.read_csv(csv_file_load)
+
+        # pivot the data to create a 2D array
+        heatmap_data = df.pivot(index='y_coordinate', columns='x_coordinate', values='sensor_value')
+
+        # create the heatmap using seaborn
+        plt.figure(figsize=(6.15, 5))
+        plt.title('Heatmap of Sensor Data')
+        seaborn.heatmap(heatmap_data, cmap='coolwarm', annot=True, fmt=".1f", cbar_kws={'label': 'Sensor Values'})
+        fig = plt.gcf()
+
+        # Create a canvas on the results_frame to place the plot and call the canvas; canvas_r.
+        # Place or draw the plot on the canvas
+        # Geometrically place the plot using the pack method
+        canvas_r = FigureCanvasTkAgg(fig, master=results_frame)
+        canvas_r.draw()
+        canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        # Import the matplotlib toolbar, assign it to the canvas in the test frame.
+        # Geometrically place the toolbar using the pack method.
+        toolbar = NavigationToolbar2Tk(canvas_r, results_frame)
+        toolbar.update()
+        canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
     return
 
 def f_close():
@@ -904,8 +952,36 @@ def update_message_box(message):
     # Disable the Text widget to prevent user input
     message_print_box.config(state='disabled')
 
+def f_save_log():
 
-#Create the Root Window
+    # Create a new window which we will call the save_log_dialog
+    save_log_dialog = tkinter.Toplevel()
+
+    # Ask the user to choose the file name and location
+    save_log_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+
+    # Check if the user canceled the dialog
+    if not save_log_path:
+        update_message_box("Message Log save canceled. Exiting")
+        save_log_dialog.destroy()
+
+    else:
+        # Open the chosen file in write mode
+        with open(save_log_path, "w") as file:
+            # Iterate over the message log
+            for message_tuple in message_log:
+                # Extract the message from the tuple
+                message = message_tuple
+                # Write the message to the file
+                file.write(message + "\n")
+
+        update_message_box(f"Message log saved to: {save_log_path}")
+
+
+# Create the Root Window, we call this root and it is the main window which we operate in.
+# Give the window a title, and icon and a size.
+# For each column and row that we specify (grid system) - we configure it to change by 1px for every 1 px that we alter
+# the main window.
 root = Tk()
 root.title("Robo_JCJ")
 root.iconbitmap('robot.ico')
@@ -915,22 +991,23 @@ root.columnconfigure(1, weight=1)
 root.rowconfigure(0, weight=1)
 root.rowconfigure(1, weight=1)
 
+# Create and set a tkinter variable which we will use to update the progress bar
 update_progress = tkinter.IntVar()
 
 #Create and place Frames for Widgets
-menu_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='groove')
+menu_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='flat')
 menu_frame.grid(row=0, column=0, padx=(10, 5), pady=(10, 5))
 
-info_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='groove')
+info_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='flat')
 info_frame.grid(row=0, column=1, padx=(5, 10), pady=(10, 5))
 
-test_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='groove')
+test_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='flat')
 test_frame.grid(row=1, column=0, padx=(10, 5), pady=(5, 10))
 
-results_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='groove')
+results_frame = ttk.Frame(root, width='6.4i', height='4.8i', relief='flat')
 results_frame.grid(row=1, column=1, padx=(5, 10), pady=(5, 10))
 
-#Create Buttons that go into menu_frame
+#Create Buttons & Image that go into menu_frame
 m_ip_address = Button(menu_frame, text='Assign the IP Address', width='25', justify=CENTER, command=f_fetch_ip)
 m_ip_address.grid(column=0, row=0, pady=(20, 5), padx=20)
 
@@ -952,8 +1029,17 @@ m_save_test.grid(row=5, column=0, pady=(5, 5), padx=20)
 m_load_test_data = Button(menu_frame, text='Load Previous Test Data', width='25', justify=CENTER, command=f_load_test)
 m_load_test_data.grid(row=6, column=0, pady=(5, 5), padx=20)
 
-m_close = Button(menu_frame, text='Close Down', width='25', justify=CENTER, command=f_close)
-m_close.grid(row=7, column=0, pady=(5, 20), padx=20)
+m_close = Button(menu_frame, text='Close Down Robot', width='25', justify=CENTER, command=f_close)
+m_close.grid(row=7, column=0, pady=(5, 5), padx=20)
+
+m_save_message_log = Button(menu_frame, text='Save Message Log', width='25', justify=CENTER, command=f_save_log)
+m_save_message_log.grid(row=8, column=0, pady=(5, 20), padx=20)
+
+logo_image_orig = Image.open('Robo_JCJ_Art.png')
+logo_image_resized = logo_image_orig.resize((300, 400), 2)
+logo_image = ImageTk.PhotoImage(logo_image_resized)
+logo_image_label = tkinter.Label(menu_frame, image=logo_image)
+logo_image_label.grid(row=0, column=1, rowspan=9)
 
 #info window frame
 robo_ip_label = tkinter.Label(info_frame, text='Current Selected IP Address: ')
@@ -981,7 +1067,11 @@ progress_bar = tkinter.ttk.Progressbar(info_frame, orient='horizontal', length=2
 progress_bar.grid(row=6, column=1, padx=(20, 30), pady=(5, 5))
 
 message_print_box = tkinter.Text(info_frame, height=5, width=74)
-message_print_box.grid(row=7, column=0, columnspan=2, padx=(10, 10), pady=(5, 10))
+message_print_box.grid(row=7, column=0, columnspan=2, padx=(10, 10), pady=(5, 5))
 message_print_box.config(state='disabled')
 
+author_names = tkinter.Label(info_frame, text='Authors: John Claridge, Johannes Hearn & Christoper Smeeth')
+author_names.grid(row=8, columnspan=2, pady=(5, 10), padx=(10, 10))
+
+# Open the window and loop through continuously looking for changes until closed.
 root.mainloop()

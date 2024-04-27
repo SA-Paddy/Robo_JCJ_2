@@ -4,50 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="INserted progress bar, inserted some error handling and message box.">
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo One mechanical specifications.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot 0E7 main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot 1EE main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot 2DC main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot 344 main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot 378 main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/Niryo Robots mainPY Calibration data/Robot A5A main/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/TCP-Python-API-Documentation-18-06-2020.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/first_use_example.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/simple_pick_place.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/simple_pick_place_w_conveyor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/simple_vision_pick_n_place.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/video_stream.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/simple_scripts/workspace_creation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/vision_demonstrators/1_simple_reference_conditioning.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/vision_demonstrators/4_conditionning_with_conveyor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/vision_demonstrators/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/examples/vision_demonstrators/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/enums.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/image_functions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/markers_detection.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/math_functions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/objects/CalibrationObject.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/objects/ObjectDetector.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_camera/objects/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/digital_pin_object.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/enums.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/hardware_status_object.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/packet_builder.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/pose_object.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne-main/niryo_one_tcp_client/tcp_client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Robo_JCJ.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Robo_JCJ.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_19_04_2024_19_03_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_19_04_2024_19_03__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_19_04_2024_19_03__Changes_.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="Updated from university ammended version 26/04/2024">
+      <change afterPath="$PROJECT_DIR$/LSBU.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Robo_JCJ_Art.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Robo_JCJ_Art_original.ai" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ApiTCP_Python_NiryoOne" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,12 +100,21 @@
       <option name="project" value="LOCAL" />
       <updated>1713559833927</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Updated from university ammended version 26/04/2024">
+      <option name="closed" value="true" />
+      <created>1714223854909</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1714223854909</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="INserted progress bar, inserted some error handling and message box." />
-    <option name="LAST_COMMIT_MESSAGE" value="INserted progress bar, inserted some error handling and message box." />
+    <MESSAGE value="Updated from university ammended version 26/04/2024" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated from university ammended version 26/04/2024" />
   </component>
 </project>
