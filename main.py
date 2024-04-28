@@ -483,7 +483,7 @@ def f_connect_attempt():
             update_message_box('Attempting connection to Arduino through Serial')
             arduinoData = serial.Serial(selected_com_port, selected_baudrate)
             time.sleep(6)
-            print("arduino checked in")
+            update_message_box("Serial device checked in")
 
             # Check to see if there is data available
             if arduinoData.inWaiting() > 0 and not first_data_pass_check:
@@ -493,14 +493,12 @@ def f_connect_attempt():
                 # Decode the bytes to string using utf-8 and strip any newline characters
                 datapacket = data_bytes.decode('utf-8').strip('\r\n')
 
-                print("Received data from Arduino:", datapacket)
+                update_message_box(f'Received data from Serial Device: {datapacket}')
 
-                # Close the connection to the Arduino
-                #arduinoData.close()
-                # serial.Serial('com36', 9600).close()
                 time.sleep(3)
-                print("Arduino got data")
+
                 first_data_pass_check = True
+
             update_message_box('Connection seems to have been successful')
             break
 
@@ -842,6 +840,17 @@ def first_phase_move():
             print(e)
             break
 
+# This function is called by f_run_test in the course of conducting the test procedure
+def second_phase_move():
+    return
+
+# This function is called by f_run_test in the course of conducting the test procedure
+def third_phase_move():
+    return
+
+# This function is called by f_run_test in the course of conducting the test procedure
+def fourth_phase_move():
+    return
 
 def f_save_test():
 
@@ -866,7 +875,8 @@ def f_save_test():
     df.to_csv(csv_file_save, index=False)
 
     # Close down the window once completed and update the user
-    update_message_box('Save completed')
+    update_message_box('Test data save completed')
+    update_message_box(f"Test data saved to: {csv_file_save}")
     save_dialog.destroy()
 
 def f_load_test():
@@ -913,8 +923,9 @@ def f_load_test():
         toolbar = NavigationToolbar2Tk(canvas_r, results_frame)
         toolbar.update()
         canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        load_dialog.destroy()
 
-    return
+
 
 def f_close():
     if robot_connected == False:
@@ -978,6 +989,13 @@ def f_save_log():
         update_message_box(f"Message log saved to: {save_log_path}")
 
 
+def plot_results_from_test():
+    # Ensure that the contents of the results_frame are empty before plotting to it
+    for widget in results_frame.winfo_children():
+        widget.destroy()
+
+    return
+
 # Create the Root Window, we call this root and it is the main window which we operate in.
 # Give the window a title, and icon and a size.
 # For each column and row that we specify (grid system) - we configure it to change by 1px for every 1 px that we alter
@@ -1035,7 +1053,7 @@ m_close.grid(row=7, column=0, pady=(5, 5), padx=20)
 m_save_message_log = Button(menu_frame, text='Save Message Log', width='25', justify=CENTER, command=f_save_log)
 m_save_message_log.grid(row=8, column=0, pady=(5, 20), padx=20)
 
-logo_image_orig = Image.open('Robo_JCJ_Art.png')
+logo_image_orig = Image.open('Robo_JCJ_Art_V2.png')
 logo_image_resized = logo_image_orig.resize((300, 400), 2)
 logo_image = ImageTk.PhotoImage(logo_image_resized)
 logo_image_label = tkinter.Label(menu_frame, image=logo_image)
@@ -1057,7 +1075,7 @@ piece_width_label.grid(row=3, column=0, padx=(30, 20), pady=(5, 5))
 piece_length_label = tkinter.Label(info_frame, text='Piece Length in mm: ')
 piece_length_label.grid(row=4, column=0, padx=(30, 20), pady=(5, 5))
 
-piece_resolution_label = tkinter.Label(info_frame, text='Selected Resolution (test points): ')
+piece_resolution_label = tkinter.Label(info_frame, text='Selected Resolution (mm / test point): ')
 piece_resolution_label.grid(row=5, column=0, padx=(30, 20), pady=(5, 5))
 
 progress_label = tkinter.Label(info_frame, text='Test progress: ')
