@@ -990,9 +990,37 @@ def f_save_log():
 
 
 def plot_results_from_test():
+
+    global test_data_final
+
     # Ensure that the contents of the results_frame are empty before plotting to it
     for widget in results_frame.winfo_children():
         widget.destroy()
+
+    # Convert the list of tuples into a DataFrame
+    t_df = pandas.DataFrame(test_data_final, columns=['x_coordinate', 'y_coordinate', 'sensor_value'])
+
+    # pivot the data to create a 2D array
+    heatmap_data = t_df.pivot(index='y_coordinate', columns='x_coordinate', values='sensor_value')
+
+    # create the heatmap using seaborn
+    plt.figure(figsize=(6.15, 5))
+    plt.title('Heatmap of Sensor Data')
+    seaborn.heatmap(heatmap_data, cmap='coolwarm', annot=True, fmt=".1f", cbar_kws={'label': 'Sensor Values'})
+    fig = plt.gcf()
+
+    # Create a canvas on the results_frame to place the plot and call the canvas; canvas_r.
+    # Place or draw the plot on the canvas
+    # Geometrically place the plot using the pack method
+    canvas_r = FigureCanvasTkAgg(fig, master=results_frame)
+    canvas_r.draw()
+    canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+    # Import the matplotlib toolbar, assign it to the canvas in the test frame.
+    # Geometrically place the toolbar using the pack method.
+    toolbar = NavigationToolbar2Tk(canvas_r, results_frame)
+    toolbar.update()
+    canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
     return
 

@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="Added artwork and the functions of loading saved data.">
-      <change afterPath="$PROJECT_DIR$/Robo_JCJ_Art_V2.ai" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Robo_JCJ_Art_V2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_19_04_2024_19_03__Changes_.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="New artwork and added additional functions that will be required.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -117,7 +113,15 @@
       <option name="project" value="LOCAL" />
       <updated>1714253179108</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="New artwork and added additional functions that will be required.">
+      <option name="closed" value="true" />
+      <created>1714328744751</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1714328744751</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -125,6 +129,7 @@
     <MESSAGE value="INserted progress bar, inserted some error handling and message box." />
     <MESSAGE value="Updated from university ammended version 26/04/2024" />
     <MESSAGE value="Added artwork and the functions of loading saved data." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added artwork and the functions of loading saved data." />
+    <MESSAGE value="New artwork and added additional functions that will be required." />
+    <option name="LAST_COMMIT_MESSAGE" value="New artwork and added additional functions that will be required." />
   </component>
 </project>
