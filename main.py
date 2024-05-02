@@ -73,6 +73,8 @@ global drive_distance
 global update_progress
 global prog_update_first_phase
 global message_log
+global near_limit_trig
+global far_limit_trig
 
 #Set non tkinter variables values where required
 ip_address=''
@@ -157,6 +159,9 @@ def f_fetch_ip():
         # grid system, we are able to control where things go and how the GUI looks.
         i_ip_address.grid(row=0, column=1, padx=(20, 30), pady=(10, 5))
 
+        # Update the message box
+        update_message_box(f'Assigned IP is: {ip_address}')
+
 
     default_ip="192.168.1."    # Here we create the default ip in a variable
     ip_window = tkinter.Toplevel()    # Here we create the pop-up and call it ip_window
@@ -225,6 +230,10 @@ def f_fetch_port():
         i_baudrate = tkinter.Label(info_frame, text=selected_baudrate)
         i_baudrate.grid(row=2, column=1, padx=(20, 30), pady=(5, 5))
 
+        # Update Message Box
+        update_message_box(f'Assigned Serial COM Port: {selected_com_port}')
+        update_message_box(f'Assigned Serial Baud Rate: {selected_baudrate}')
+
     # Create a pop-up windw that we will call com_window
     # Give it the title Arduino COM PORT, the robot icon in our folder and a geometry of 420x120 px
     com_window = tkinter.Toplevel()
@@ -284,6 +293,8 @@ def f_connect_attempt():
     global number_of_drive_pulses
     global drive_distance
     global serial_fail_choice
+    global near_limit_trig
+    global far_limit_trig
 
 
     # Define initial values for any variables as required
@@ -349,7 +360,7 @@ def f_connect_attempt():
                 # linear rail.
                 update_message_box('Checking if Niryo One calibration is required')
                 robot.calibrate(CalibrateMode.AUTO)
-                update_message_box('Telling robot to nod to confirm to user that connection succesful')
+                update_message_box('Telling robot to nod to confirm to user that connection successful')
                 #robot.move_pose(-.0, -0.44, 0.15, -0.041, 0.758, -1.563)
                 robot.move_pose(0.15, 0., 0.2, -0.041, 0.758, -1.563)
                 time.sleep(1)
@@ -570,6 +581,13 @@ def f_set_test():
         i_resolution = tkinter.Label(info_frame, text=resolution)
         i_resolution.grid(row=5, column=1, padx=(20, 30), pady=(5, 5))
 
+        # Update Message Box
+        update_message_box(f'Selected Width in mm: {width_mm}')
+        update_message_box(f'Selected Length in mm: {length_mm}')
+        update_message_box(f'Selected Resolution in tests / mm: {resolution}')
+        update_message_box(f'Selected Plate Thickness in m: {plate_thickness}')
+        update_message_box(f'Selected Tool Arm Length in m: {tool_arm_length}')
+
         # Call the generate_test_data function passing to it the values of width, length and resolution.
         generate_test_data(width_mm, length_mm, resolution)
 
@@ -761,9 +779,80 @@ def first_phase_move():
     global number_of_steps
     global prog_update_first_phase
     global update_progress
+    global near_limit_trig
+    global far_limit_trig
 
     # Create a local variable that is needed and set its initial value
     phase_one_move_number = 0
+
+    # re-state localised constants to hold our constraints
+    # This just makes it easier to change these variables if we need to
+    steps_per_revolution = 200
+    mm_per_revolution = 5
+    min_pulse_width = 2.5e-6  # 2.5 microseconds
+    min_pulse_delay = 5e-6  # 5 microseconds
+
+    # Now we enable the driver with a signal
+    # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
+    # for enablement.
+    # First we set the pin states for all pins (0 is input, 1 is output - from enums)
+    robot.set_pin_mode(0, 1)
+    robot.set_pin_mode(1, 1)
+    robot.set_pin_mode(2, 1)
+
+
+    # Now we enable the limit switches for feedback
+    # We will be using GPIO_2A (enum 3) for voltage out signal, GPIO_2B (enum 4) for near limit input and
+    # GPIO_2C (enum 5) for far limit input
+    # First we set the pin states for all pins (0 is input, 1 is output - from enums)
+    robot.set_pin_mode(3, 1)
+    robot.set_pin_mode(4, 0)
+    robot.set_pin_mode(5, 0)
+
+    # Lets update the user as to what is happening
+    update_message_box('Enabling Linear Stepper Motor Driver')
+    update_message_box('Setting Linear Stepper Motor Direction')
+
+    # Now we drive the enablement pulse (pin GPIO_1C enum 1) digital state low is 0 and high is 1
+    robot.digital_write(1, 1)
+    # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
+    # next instruction
+    time.sleep(min_pulse_delay)
+    # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
+    robot.digital_write(1, 1)
+    # Run the directional pulse for a minimum time before implementing the next instruction
+    time.sleep(min_pulse_delay)
+
+    # Lets update the user as to what is happening
+    update_message_box('Voltage To Limit Switches')
+
+    # Send signal to the limit switches
+    robot.digital_write(3, 1)
+
+    # Create local variables which we will use in the logic to control the linear rail and undertake required calcs.
+    linear_moved_steps_phase_one = 0
+    number_of_drive_pulses_phase_one = (410 / mm_per_revolution)*steps_per_revolution
+
+    # Lets update the user as to what is happening
+    update_message_box('Start Linear Drive Instruction Loop')
+
+    if near_limit_trig == True and far_limit_trig == False:
+        while linear_moved_steps_phase_one < number_of_drive_pulses_phase_one:
+            # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
+            robot.digital_write(0, 1)
+            # Run the pulse for the minimum pulse width
+            time.sleep(min_pulse_width)
+            # Drive Pulse Off (GPIO_1A is enum 0, High is enum 1)
+            robot.digital_write(0, 0)
+            # Run for the minimum pulse width
+            time.sleep(min_pulse_width)
+            # Check condition of far limit switch and update far_limit_trig if appropriate
+            far_limit_pin = robot.digital_read(5)
+            # Increase linear moved steps variable
+            linear_moved_steps_phase_one += 1
+            if far_limit_pin == 1:
+                far_limit_trig = True
+                near_limit_trig = False
 
     # Create a for loop that will itterate over the move_one_coordinates list and extract the first value in each tuple
     # as x and the second as y.
@@ -804,7 +893,7 @@ def first_phase_move():
 
             # We insert a break period to enable the robot to complete its move before we undertake to send the next
             # instruction set.
-            time.sleep(3)
+            time.sleep(2)
 
             # Here we check to see if there is data coming from the Arduinos Com Port.
             if arduinoData.inWaiting() > 0:
@@ -819,6 +908,7 @@ def first_phase_move():
                 datapacket = data_bytes.decode('utf-8').strip('\r\n')
                 time.sleep(1)
                 sensor_value = float(datapacket)
+                time.sleep(1)
 
             # Update the user as to what the arduino data was.
             # Append to a tuples lis the x and y coordinates along with the sensor data.
@@ -829,6 +919,7 @@ def first_phase_move():
             phase_one_move_number += 1
             prog_update_first_phase=(phase_one_move_number * 100) / number_of_steps
             update_progress.set(prog_update_first_phase)
+            time.sleep(1)
 
         # Should there be an error, catch it and inform the user through a showerror messagebox
         # Additionally, print in teh GUI message box that the test failed.

@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="New artwork and added additional functions that will be required.">
+    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="Updated the function that plots the graph after the test has been run">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -121,7 +121,15 @@
       <option name="project" value="LOCAL" />
       <updated>1714328744751</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Updated the function that plots the graph after the test has been run">
+      <option name="closed" value="true" />
+      <created>1714427118022</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1714427118022</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -130,6 +138,7 @@
     <MESSAGE value="Updated from university ammended version 26/04/2024" />
     <MESSAGE value="Added artwork and the functions of loading saved data." />
     <MESSAGE value="New artwork and added additional functions that will be required." />
-    <option name="LAST_COMMIT_MESSAGE" value="New artwork and added additional functions that will be required." />
+    <MESSAGE value="Updated the function that plots the graph after the test has been run" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated the function that plots the graph after the test has been run" />
   </component>
 </project>
