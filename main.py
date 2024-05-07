@@ -64,6 +64,7 @@ global move_one_coordinates
 global move_two_coordinates
 global move_three_coordinates
 global move_four_coordinates
+global move_five_coordinates
 global tool_arm_length
 global plate_thickness
 global test_data_final
@@ -72,6 +73,7 @@ global number_of_drive_pulses
 global drive_distance
 global update_progress
 global prog_update_first_phase
+global prog_update_second_phase
 global message_log
 global near_limit_trig
 global far_limit_trig
@@ -102,12 +104,14 @@ def split_coordinates():
     global move_two_coordinates
     global move_three_coordinates
     global move_four_coordinates
+    global move_five_coordinates
 
     # Set up the four lists and declare them as lists
     move_one_coordinates = []
     move_two_coordinates = []
     move_three_coordinates =[]
     move_four_coordinates =[]
+    move_five_coordinates = []
 
     # Now we attempt to undertake the split down of coordinates - for this a try statement is used to enable us to
     # handle an error should it occur. The most likely error is the one in which this function is called before
@@ -118,14 +122,16 @@ def split_coordinates():
         # every tuple as x - and the second as y.
         for x, y in coordinates:
             # Using if statements we can now tell it what we want it to do for each met condition
-            if y <= 0.25:
+            if y <= 0.2:
                 move_one_coordinates.append((x, y))
-            elif 0.25 < y <= 0.5:
+            elif 0.21 < y <= 0.41:
                 move_two_coordinates.append((x, y))
-            elif 0.5 < y <= 0.75:
+            elif 0.41 < y <= 0.61:
                 move_three_coordinates.append((x, y))
-            elif 0.75 < y <= 1.0:
+            elif 0.61 < y <= 0.81:
                 move_four_coordinates.append((x, y))
+            elif 0.81 < y <= 1.0:
+                move_five_coordinates.append((x, y))
 
     # Here we insert our error handling associated with the try statement. in this instance we are telling it that if
     # an error is experienced then a tkinter message box of the form showerror needs to be called and the message shown.
@@ -378,31 +384,36 @@ def f_connect_attempt():
                 # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
                 # for enablement.
                 # First we set the pin states for all pins (0 is input, 1 is output - from enums)
-                robot.set_pin_mode(0, 1)
-                robot.set_pin_mode(1, 1)
-                robot.set_pin_mode(2, 1)
+                update_message_box('setting pins for robot output to linear')
+                robot.set_pin_mode(RobotPin.GPIO_1A, PinMode.OUTPUT)
+                robot.set_pin_mode(RobotPin.GPIO_1B, PinMode.OUTPUT)
+                robot.set_pin_mode(RobotPin.GPIO_1C, PinMode.OUTPUT)
 
                 # Now we enable the limit switches for feedback
                 # We will be using GPIO_2A (enum 3) for voltage out signal, GPIO_2B (enum 4) for near limit input and
                 # GPIO_2C (enum 5) for far limit input
                 # First we set the pin states for all pins (0 is input, 1 is output - from enums)
-                robot.set_pin_mode(3, 1)
-                robot.set_pin_mode(4, 0)
-                robot.set_pin_mode(5, 0)
+                update_message_box('Setting pin modes for linear rail')
+                robot.set_pin_mode(RobotPin.GPIO_2A, PinMode.OUTPUT)
+                robot.set_pin_mode(RobotPin.GPIO_2B, PinMode.INPUT)
+                robot.set_pin_mode(RobotPin.GPIO_2C, PinMode.INPUT)
 
                 # Now we drive the enablement pulse (pin GPIO_1C enum 1) digital state low is 0 and high is 1
-                robot.digital_write(1, 1)
+                update_message_box('Setting enablement to stepper')
+                #robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
                 # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
                 # next instruction
                 time.sleep(min_pulse_delay)
 
                 # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
-                robot.digital_write(1, 1)
+                update_message_box('Setting direction on stepper')
+                #robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
                 # Run the directional pulse for a minimum time before implementing the next instruction
                 time.sleep(min_pulse_delay)
 
                 # Send signal to the limit switches
-                robot.digital_write(3, 1)
+                update_message_box('Sending signal to limits')
+                #robot.digital_write(RobotPin.GPIO_2A, DigitalState.HIGH)
 
                 # Create a variable to hold our boolean for far and near limits
                 far_limit_trig = False
@@ -411,24 +422,29 @@ def f_connect_attempt():
                 # Now we step the motor until the far limit switch is triggered
                 # Create a loop that will continuously run until the condition has been met
                 while far_limit_trig == False:
+                    update_message_box(f'current far tig status: {far_limit_trig}')
+                    update_message_box(f'current near trig status: {near_limit_trig}')
                     # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
-                    robot.digital_write(0, 1)
+                    update_message_box('Sending drive pulse to stepper')
+                    robot.digital_write(RobotPin.GPIO_1A, DigitalState.HIGH)
                     # Run the pulse for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Drive Pulse Off (GPIO_1A is enum 0, High is enum 1)
-                    robot.digital_write(0, 0)
+                    robot.digital_write(RobotPin.GPIO_1A, DigitalState.LOW)
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    far_limit_pin = robot.digital_read(5)
+                    far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
                     if far_limit_pin == 1:
+                        update_message_box('far limit trig pin state activated')
                         far_limit_trig = True
                         # Now we drive the directional pin GPIO_1B (enum 1) to anti -clockwise (we think this is low)
-                        robot.digital_write(1, 0)
+                        robot.digital_write(RobotPin.GPIO_1B, DigitalState.LOW)
                         # Run the directional pulse for a minimum time before implementing the next instruction
                         time.sleep(min_pulse_delay)
                         near_limit_trig = False
                     else:
+                        update_message_box('initial else clause kicked in')
                         far_limit_trig = False
                         near_limit_trig = True
 
@@ -437,20 +453,20 @@ def f_connect_attempt():
                 # Create a loop that will continuously run until the condition has been met
                 while near_limit_trig == False:
                     # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
-                    robot.digital_write(0, 1)
+                    robot.digital_write(RobotPin.GPIO_1A, DigitalState.HIGH)
                     # Run the pulse for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Drive Pulse Off (GPIO_1A is enum 0, High is enum 1)
-                    robot.digital_write(0, 0)
+                    robot.digital_write(RobotPin.GPIO_1A, DigitalState.LOW)
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     number_of_drive_pulses += 1
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    near_limit_trig = robot.digital_read(4)
+                    near_limit_trig = robot.digital_read(RobotPin.GPIO_2B)
                     if near_limit_trig == 1:
                         near_limit_trig = True
-                        # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is low)
-                        robot.digital_write(1, 1)
+                        # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is High)
+                        robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
                         # Run the directional pulse for a minimum time before implementing the next instruction
                         time.sleep(min_pulse_delay)
                         far_limit_trig = False
@@ -707,13 +723,14 @@ def generate_test_data(width_mm, length_mm, resolution):
                 # Append the data to the coordinates list, ensure data type is float as Niryo one only accepts float
                 coordinates.append((float(x_value), float(y_value)))
 
+
         # Create the figure on which we will plot
         # Set the aspect to equal (one unit in x = one unit in y) - box tells it to adjust the plot dimensions so as to
         # be square.
         # Set a grid over the plot.
         # Use a scatter plot from the coordinates list which you unzip. Make the plot points red and size 8
         # Give the plot the title of Proposed Test, as well as naming the x and y axis.
-        fig, ax = plt.subplots(figsize=(6.15, 5))
+        fig, ax = plt.subplots(figsize=(6.15, 4))
         ax.set_aspect('equal', 'box')
         ax.grid(True)
         ax.scatter(*zip(*coordinates), color='red', s=8)
@@ -745,19 +762,22 @@ def f_run_test():
     # We use a try statement to enable us to catch any errors and handle them gracefully.
     try:
         # First ensure that the progress bar has been set to zero
-        progress_bar.set(0)
+        update_progress.set(0)
+        print('we set progress bar')
 
         # Let the user know that we are breaking the movements down into stages.
         # Call on the split coordinates function to break down the coordinates.
         # We do not need to pass anything to the function or from the function as coordinates is a global variable.
         update_message_box('Splitting down coordinates into movement stages')
         split_coordinates()
+        print('we split coordinates')
 
         # Update the user that splitting down of coordinates was successful.
         # Update user that the first phase of movements being instructed.
         # Call on the first phase move function to undertake the first stage.
         # Update the user that the movement set is complete.
         update_message_box('First instruction set being sent to the robot')
+        print('calling first phase')
         first_phase_move()
         update_message_box('First movement phase completed')
 
@@ -766,6 +786,83 @@ def f_run_test():
         tkinter.messagebox.showerror(title='error', message='Something went wrong. Please ensure that /n '
                                                             '1. You have connected to the robot /n'
                                                             '2. You have set up the test')
+
+def linear_move_instruction(linear_dist_travel_requirement_mm):
+    global near_limit_trig
+    global far_limit_trig
+
+    try:
+        # re-state localised constants to hold our constraints
+        # This just makes it easier to change these variables if we need to
+        steps_per_revolution = 200
+        mm_per_revolution = 5
+        min_pulse_width = 2.5e-6  # 2.5 microseconds
+        min_pulse_delay = 5e-6  # 5 microseconds
+
+        # Now we enable the driver with a signal
+        # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
+        # for enablement.
+        # First we set the pin states for all pins (0 is input, 1 is output - from enums)
+        robot.set_pin_mode(RobotPin.GPIO_1A, PinMode.OUTPUT)
+        robot.set_pin_mode(RobotPin.GPIO_1B, PinMode.OUTPUT)
+        robot.set_pin_mode(RobotPin.GPIO_1C, PinMode.OUTPUT)
+
+
+        # Now we enable the limit switches for feedback
+        # We will be using GPIO_2A (enum 3) for voltage out signal, GPIO_2B (enum 4) for near limit input and
+        # GPIO_2C (enum 5) for far limit input
+        # First we set the pin states for all pins (0 is input, 1 is output - from enums)
+        robot.set_pin_mode(RobotPin.GPIO_2A, PinMode.OUTPUT)
+        robot.set_pin_mode(RobotPin.GPIO_2B, PinMode.INPUT)
+        robot.set_pin_mode(RobotPin.GPIO_2C, PinMode.INPUT)
+
+        # Lets update the user as to what is happening
+        update_message_box('Enabling Linear Stepper Motor Driver')
+        update_message_box('Setting Linear Stepper Motor Direction')
+
+        # Now we drive the enablement pulse (pin GPIO_1C enum 2) digital state low is 0 and high is 1
+        robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
+        # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
+        # next instruction
+        time.sleep(min_pulse_delay)
+        # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
+        robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
+        # Run the directional pulse for a minimum time before implementing the next instruction
+        time.sleep(min_pulse_delay)
+
+        # Lets update the user as to what is happening
+        update_message_box('Voltage To Limit Switches')
+
+        # Send signal to the limit switches
+        robot.digital_write(RobotPin.GPIO_2A, DigitalState.HIGH)
+
+        # Create local variables which we will use in the logic to control the linear rail and undertake required calcs.
+        linear_moved_steps = 0
+        number_of_drive_pulses = (linear_dist_travel_requirement_mm / mm_per_revolution)*steps_per_revolution
+
+        # Lets update the user as to what is happening
+        update_message_box('Start Linear Drive Instruction Loop')
+
+        if near_limit_trig == True and far_limit_trig == False:
+            while linear_moved_steps < number_of_drive_pulses:
+                # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
+                robot.digital_write(RobotPin.GPIO_1A, DigitalState.HIGH)
+                # Run the pulse for the minimum pulse width
+                time.sleep(min_pulse_width)
+                # Drive Pulse Off (GPIO_1A is enum 0, High is enum 1)
+                robot.digital_write(RobotPin.GPIO_1A, DigitalState.LOW)
+                # Run for the minimum pulse width
+                time.sleep(min_pulse_width)
+                # Check condition of far limit switch and update far_limit_trig if appropriate
+                far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+                # Increase linear moved steps variable
+                linear_moved_steps += 1
+                if far_limit_pin == 1:
+                    far_limit_trig = True
+                    near_limit_trig = False
+
+    except Exception as e:
+        tkinter.messagebox.showerror(title='Linear Rail Error', message='Failed to move linear rail')
 
 # This function is called by f_run_test in the course of conducting the test procedure
 def first_phase_move():
@@ -779,80 +876,21 @@ def first_phase_move():
     global number_of_steps
     global prog_update_first_phase
     global update_progress
-    global near_limit_trig
-    global far_limit_trig
 
-    # Create a local variable that is needed and set its initial value
+    # The following was just used for de-bugging
+    #print('started first phase')
+
+    # Inform the user of the stage
+    update_message_box('Starting Linear Rail Instruction Set')
+
+    # Call the linear rail movement phase and pass the movement value as an integer
+    linear_move_instruction(400)
+
+    # Inform the user of the stage
+    update_message_box('Starting Arm Instruction Set')
+
+    # Create a local variable used to keep track of our loop status
     phase_one_move_number = 0
-
-    # re-state localised constants to hold our constraints
-    # This just makes it easier to change these variables if we need to
-    steps_per_revolution = 200
-    mm_per_revolution = 5
-    min_pulse_width = 2.5e-6  # 2.5 microseconds
-    min_pulse_delay = 5e-6  # 5 microseconds
-
-    # Now we enable the driver with a signal
-    # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
-    # for enablement.
-    # First we set the pin states for all pins (0 is input, 1 is output - from enums)
-    robot.set_pin_mode(0, 1)
-    robot.set_pin_mode(1, 1)
-    robot.set_pin_mode(2, 1)
-
-
-    # Now we enable the limit switches for feedback
-    # We will be using GPIO_2A (enum 3) for voltage out signal, GPIO_2B (enum 4) for near limit input and
-    # GPIO_2C (enum 5) for far limit input
-    # First we set the pin states for all pins (0 is input, 1 is output - from enums)
-    robot.set_pin_mode(3, 1)
-    robot.set_pin_mode(4, 0)
-    robot.set_pin_mode(5, 0)
-
-    # Lets update the user as to what is happening
-    update_message_box('Enabling Linear Stepper Motor Driver')
-    update_message_box('Setting Linear Stepper Motor Direction')
-
-    # Now we drive the enablement pulse (pin GPIO_1C enum 1) digital state low is 0 and high is 1
-    robot.digital_write(1, 1)
-    # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
-    # next instruction
-    time.sleep(min_pulse_delay)
-    # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
-    robot.digital_write(1, 1)
-    # Run the directional pulse for a minimum time before implementing the next instruction
-    time.sleep(min_pulse_delay)
-
-    # Lets update the user as to what is happening
-    update_message_box('Voltage To Limit Switches')
-
-    # Send signal to the limit switches
-    robot.digital_write(3, 1)
-
-    # Create local variables which we will use in the logic to control the linear rail and undertake required calcs.
-    linear_moved_steps_phase_one = 0
-    number_of_drive_pulses_phase_one = (410 / mm_per_revolution)*steps_per_revolution
-
-    # Lets update the user as to what is happening
-    update_message_box('Start Linear Drive Instruction Loop')
-
-    if near_limit_trig == True and far_limit_trig == False:
-        while linear_moved_steps_phase_one < number_of_drive_pulses_phase_one:
-            # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
-            robot.digital_write(0, 1)
-            # Run the pulse for the minimum pulse width
-            time.sleep(min_pulse_width)
-            # Drive Pulse Off (GPIO_1A is enum 0, High is enum 1)
-            robot.digital_write(0, 0)
-            # Run for the minimum pulse width
-            time.sleep(min_pulse_width)
-            # Check condition of far limit switch and update far_limit_trig if appropriate
-            far_limit_pin = robot.digital_read(5)
-            # Increase linear moved steps variable
-            linear_moved_steps_phase_one += 1
-            if far_limit_pin == 1:
-                far_limit_trig = True
-                near_limit_trig = False
 
     # Create a for loop that will itterate over the move_one_coordinates list and extract the first value in each tuple
     # as x and the second as y.
@@ -862,23 +900,25 @@ def first_phase_move():
         # Additionally, an adjustment is required to account for the tool extending beyond the TCP.
         # The following if statements attempt to capture and adjust the coordinates accordingly.
         if x != 0.0 and y > 0.0:
-            angle_radians = math.atan(y / x)
-            cosine_angle = math.cos(angle_radians)
-            sine_angle = math.sin(angle_radians)
-            x_adjustment = tool_arm_length * cosine_angle
-            y_adjustment = tool_arm_length * sine_angle
+            # angle_radians = math.atan(y / x)
+            # cosine_angle = math.cos(angle_radians)
+            # sine_angle = math.sin(angle_radians)
+            # x_adjustment = tool_arm_length * cosine_angle
+            # y_adjustment = tool_arm_length * sine_angle
+            x_adjustment = 0
+            y_adjustment = 0
             if x < 0:
                 adjusted_x = x + x_adjustment
-                adjusted_y = ((y - 0.41) - y_adjustment)
+                adjusted_y = ((y - 0.4) - y_adjustment)
             else:
                 adjusted_x = x - x_adjustment
-                adjusted_y = ((y-0.41) + y_adjustment)
+                adjusted_y = ((y-0.4) + y_adjustment)
         elif (x==0) and (y!=0):
             adjusted_x = x
-            adjusted_y = ((y-0.41) + tool_arm_length)
+            adjusted_y = ((y-0.4) + tool_arm_length)
         else:
             adjusted_x = tool_arm_length
-            adjusted_y = y - 0.41
+            adjusted_y = y - 0.4
 
         # With the coordinates having been adjusted - we can now try a robot move instruction, capturing any exceptions.
         try:
@@ -889,7 +929,7 @@ def first_phase_move():
 
             # Per the API instruction set, we pass the x, y and z coordinates in m.
             # Instead of directly attributing the values, however, we utilise variables.
-            robot.move_pose(adjusted_x, adjusted_y, plate_thickness, -0.052, 0.715, -1.563)
+            robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.03 , -0.052, 0.855, -1.563)
 
             # We insert a break period to enable the robot to complete its move before we undertake to send the next
             # instruction set.
@@ -920,6 +960,7 @@ def first_phase_move():
             prog_update_first_phase=(phase_one_move_number * 100) / number_of_steps
             update_progress.set(prog_update_first_phase)
             time.sleep(1)
+            #robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.09, -0.052, 0.715, -1.563)
 
         # Should there be an error, catch it and inform the user through a showerror messagebox
         # Additionally, print in teh GUI message box that the test failed.
@@ -933,6 +974,111 @@ def first_phase_move():
 
 # This function is called by f_run_test in the course of conducting the test procedure
 def second_phase_move():
+    # Re-declare the global variables to stop the function from creating local versions
+    global move_two_coordinates
+    global coordinates
+    global test_data_final
+    global tool_arm_length
+    global plate_thickness
+    global number_of_steps
+    global prog_update_second_phase
+    global prog_update_first_phase
+    global update_progress
+
+    # The following was just used for de-bugging
+    # print('started first phase')
+
+    # Inform the user of the stage
+    update_message_box('Starting Linear Rail Instruction Set')
+
+    # Call the linear rail movement phase and pass the movement value as an integer
+    linear_move_instruction(400)
+
+    # Inform the user of the stage
+    update_message_box('Starting Arm Instruction Set')
+
+    # Create a local variable used to keep track of our loop status
+    phase_two_move_number = 0
+
+    # Create a for loop that will itterate over the move_one_coordinates list and extract the first value in each tuple
+    # as x and the second as y.
+    for (x, y) in move_two_coordinates:
+
+        # The coordinates require adjustment from the robots frame of reference to the real world.
+        # Additionally, an adjustment is required to account for the tool extending beyond the TCP.
+        # The following if statements attempt to capture and adjust the coordinates accordingly.
+        if x != 0.0 and y > 0.0:
+            # angle_radians = math.atan(y / x)
+            # cosine_angle = math.cos(angle_radians)
+            # sine_angle = math.sin(angle_radians)
+            # x_adjustment = tool_arm_length * cosine_angle
+            # y_adjustment = tool_arm_length * sine_angle
+            x_adjustment = 0
+            y_adjustment = 0
+            if x < 0:
+                adjusted_x = x + x_adjustment
+                adjusted_y = ((y - 0.4) - y_adjustment)
+            else:
+                adjusted_x = x - x_adjustment
+                adjusted_y = ((y - 0.4) + y_adjustment)
+        elif (x == 0) and (y != 0):
+            adjusted_x = x
+            adjusted_y = ((y - 0.4) + tool_arm_length)
+        else:
+            adjusted_x = tool_arm_length
+            adjusted_y = y - 0.4
+
+        # With the coordinates having been adjusted - we can now try a robot move instruction, capturing any exceptions.
+        try:
+
+            # For each set of coordinates print a message telling the user where the robot is moving to.
+            update_message_box(f'attempting to move to real x: {x} and y: {y}')
+            update_message_box(f'Robot coordinates x: {adjusted_x} and y: {adjusted_y}')
+
+            # Per the API instruction set, we pass the x, y and z coordinates in m.
+            # Instead of directly attributing the values, however, we utilise variables.
+            robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.03, -0.052, 0.855, -1.563)
+
+            # We insert a break period to enable the robot to complete its move before we undertake to send the next
+            # instruction set.
+            time.sleep(2)
+
+            # Here we check to see if there is data coming from the Arduinos Com Port.
+            if arduinoData.inWaiting() > 0:
+                # If there is data then we read the data and assign it to the variable data_bytes.
+                # We then give a break to allow the system to stabilise (we have found this reduces errors).
+                # Then we decode the received data and assign it to the variable datapacket.
+                # Another rest period.
+                # Then attribute the datapacket information to the variable sensor_value as a float.
+                data_bytes = arduinoData.readline()
+                time.sleep(1)
+                datapacket = data_bytes.decode('utf-8').strip('\r\n')
+                time.sleep(1)
+                sensor_value = float(datapacket)
+                time.sleep(1)
+
+            # Update the user as to what the arduino data was.
+            # Append to a tuples list the x and y coordinates along with the sensor data.
+            # Update the local variable to count the itteration number we are on.
+            # Update the progress bar
+            update_message_box(f'Sensor value reads {datapacket}')
+            test_data_final.append((x, y, sensor_value))
+            phase_two_move_number += 1
+            prog_update_second_phase = ((phase_two_move_number * 100) / number_of_steps) + prog_update_first_phase
+            update_progress.set(prog_update_second_phase)
+            time.sleep(1)
+            # robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.09, -0.052, 0.715, -1.563)
+
+        # Should there be an error, catch it and inform the user through a showerror messagebox
+        # Additionally, print in teh GUI message box that the test failed.
+        # Break the loop to stop the process.
+        except Exception as e:
+            tkinter.messagebox.showerror(title='test error', message='Test procedure experienced a critical '
+                                                                     'failure - please retry.')
+            update_message_box('Test cycle cancelled due to error')
+            print(e)
+            break
+
     return
 
 # This function is called by f_run_test in the course of conducting the test procedure
@@ -941,6 +1087,10 @@ def third_phase_move():
 
 # This function is called by f_run_test in the course of conducting the test procedure
 def fourth_phase_move():
+    return
+
+# This function is called by f_run_test in the course of conducting the test procedure
+def fifth_phase_move():
     return
 
 def f_save_test():
@@ -997,7 +1147,7 @@ def f_load_test():
         heatmap_data = df.pivot(index='y_coordinate', columns='x_coordinate', values='sensor_value')
 
         # create the heatmap using seaborn
-        plt.figure(figsize=(6.15, 5))
+        plt.figure(figsize=(6.15, 4))
         plt.title('Heatmap of Sensor Data')
         seaborn.heatmap(heatmap_data, cmap='coolwarm', annot=True, fmt=".1f", cbar_kws={'label': 'Sensor Values'})
         fig = plt.gcf()
@@ -1095,7 +1245,7 @@ def plot_results_from_test():
     heatmap_data = t_df.pivot(index='y_coordinate', columns='x_coordinate', values='sensor_value')
 
     # create the heatmap using seaborn
-    plt.figure(figsize=(6.15, 5))
+    plt.figure(figsize=(6.15, 4))
     plt.title('Heatmap of Sensor Data')
     seaborn.heatmap(heatmap_data, cmap='coolwarm', annot=True, fmt=".1f", cbar_kws={'label': 'Sensor Values'})
     fig = plt.gcf()
@@ -1173,7 +1323,7 @@ m_save_message_log = Button(menu_frame, text='Save Message Log', width='25', jus
 m_save_message_log.grid(row=8, column=0, pady=(5, 20), padx=20)
 
 logo_image_orig = Image.open('Robo_JCJ_Art_V2.png')
-logo_image_resized = logo_image_orig.resize((300, 400), 2)
+logo_image_resized = logo_image_orig.resize((250, 333), 2)
 logo_image = ImageTk.PhotoImage(logo_image_resized)
 logo_image_label = tkinter.Label(menu_frame, image=logo_image)
 logo_image_label.grid(row=0, column=1, rowspan=9)
