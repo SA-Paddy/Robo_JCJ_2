@@ -26,7 +26,7 @@
 # If you do - dont stress - this just means that the latest version is already probably installed
 
 # ------------ potential errors
-#    You must go through and consider error handling throughout
+#    None currently expected or known of
 # ------------
 
 from niryo_one_tcp_client import *
