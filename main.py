@@ -26,7 +26,9 @@
 # If you do - dont stress - this just means that the latest version is already probably installed
 
 # ------------ potential errors
-#    None currently expected or known of
+#    window doesnt close when saving mesasage log
+#    near limit calibrate doesnt have messages to update message box
+#    orientation of drive corect
 # ------------
 
 from niryo_one_tcp_client import *
@@ -426,14 +428,14 @@ def f_connect_attempt():
 
                 # Now we drive the enablement pulse (pin GPIO_1C enum 1) digital state low is 0 and high is 1
                 update_message_box('Setting enablement to stepper')
-                #robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
+                robot.digital_write(RobotPin.GPIO_1C, DigitalState.LOW)
                 # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
                 # next instruction
                 time.sleep(min_pulse_delay)
 
                 # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
                 update_message_box('Setting direction on stepper')
-                #robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
+                robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
                 # Run the directional pulse for a minimum time before implementing the next instruction
                 time.sleep(min_pulse_delay)
 
@@ -442,8 +444,10 @@ def f_connect_attempt():
                 #robot.digital_write(RobotPin.GPIO_2A, DigitalState.HIGH)
 
                 # Create a variable to hold our boolean for far and near limits
+                far_limit_pin = 400
                 far_limit_trig = False
                 near_limit_trig = False
+                near_limit_pin = 400
 
                 # Now we step the motor until the far limit switch is triggered
                 # Create a loop that will continuously run until the condition has been met
@@ -460,24 +464,27 @@ def f_connect_attempt():
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
-                    if far_limit_pin == 1:
+                    far_limit_pin -= 1
+                    update_message_box(f'far limit pin: {far_limit_pin}')
+                    if far_limit_pin == 0:
                         update_message_box('far limit trig pin state activated')
                         far_limit_trig = True
                         # Now we drive the directional pin GPIO_1B (enum 1) to anti -clockwise (we think this is low)
                         robot.digital_write(RobotPin.GPIO_1B, DigitalState.LOW)
                         # Run the directional pulse for a minimum time before implementing the next instruction
                         time.sleep(min_pulse_delay)
+                        robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
+                        time.sleep(min_pulse_width)
                         near_limit_trig = False
-                    else:
-                        update_message_box('initial else clause kicked in')
-                        far_limit_trig = False
-                        near_limit_trig = True
+                        update_message_box(f'far: {far_limit_trig}, near: {near_limit_trig}')
 
 
                 # Now that we know we have reached the far limit switch, we can work backwards to the near limits switch
                 # Create a loop that will continuously run until the condition has been met
                 while near_limit_trig == False:
+                    update_message_box('starting near trig move')
+                    robot.digital_write(RobotPin.GPIO_1C, DigitalState.LOW)
+                    time.sleep(min_pulse_width)
                     # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
                     robot.digital_write(RobotPin.GPIO_1A, DigitalState.HIGH)
                     # Run the pulse for the minimum pulse width
@@ -486,10 +493,9 @@ def f_connect_attempt():
                     robot.digital_write(RobotPin.GPIO_1A, DigitalState.LOW)
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
-                    number_of_drive_pulses += 1
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    near_limit_trig = robot.digital_read(RobotPin.GPIO_2B)
-                    if near_limit_trig == 1:
+                    near_limit_pin -= 1
+                    if near_limit_pin == 0:
                         near_limit_trig = True
                         # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is High)
                         robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
@@ -500,6 +506,7 @@ def f_connect_attempt():
                         drive_revolutions = number_of_drive_pulses / steps_per_revolution
                         drive_distance = drive_revolutions * mm_per_revolution
                         update_message_box(f'linear rail drive distance:  {drive_distance}mm')
+                        robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
                     else:
 
                         pass
