@@ -25,8 +25,22 @@
 # You may get error messages saying that it could not find a version that satisfies
 # If you do - dont stress - this just means that the latest version is already probably installed
 
-# ------------ potential errors
-#    None currently expected or known of
+# ------------ Known Errors or Issues
+#    GPIO 2 on Niryo One Robot - has been found to be non-functional.
+#    As a result there is several alterations
+#    that have had to be made to remove the limit switch functionality and instead replace with manual intervention.
+#    These will need to be re-edited in the event that the GPIO 2 board is fixed and the limit switches integrated.
+#    The functions where this was edited are f_connect_attempt, linear_move_instruction, f_run_test and f_close.
+#    Comments have been provided within the functions to outline what alterations would be neccesary
+# ------------
+
+# ------------ Potential Errors or Issues
+#    If the GPIO 2 board is rectified and the instruction sets appropriately edited per the comments, then there is
+#    still potential issues or resulting errors from the perspective that it is not known what the data format is from
+#    robot.digitalread(...).
+#    You may therefore experience errors in the recieved data type and format.
+#    Recommendation would be to ascertain what the data is that is returned
+#    and how it is formatted so that the code can be changed accordingly as required.
 # ------------
 
 from niryo_one_tcp_client import *
@@ -45,6 +59,7 @@ import time
 import seaborn
 import PIL
 from PIL import Image, ImageTk
+from datetime import datetime
 
 #Create global variables - The reason why so many are being created and used, is that there was a persistent error
 #occuring when trying to pass values into and out of functions. The source of the error could not be established
@@ -65,6 +80,7 @@ global move_two_coordinates
 global move_three_coordinates
 global move_four_coordinates
 global move_five_coordinates
+global move_six_coordinates
 global tool_arm_length
 global plate_thickness
 global test_data_final
@@ -77,6 +93,7 @@ global prog_update_second_phase
 global prog_update_third_phase
 global prog_update_fourth_phase
 global prog_update_fifth_phase
+global prog_update_sixth_phase
 global message_log
 global near_limit_trig
 global far_limit_trig
@@ -85,7 +102,9 @@ global linear_dist_2
 global linear_dist_3
 global linear_dist_4
 global linear_dist_5
+global linear_dist_6
 global i_ip_address
+global linear_positional_movement_log
 
 #Set non tkinter variables values where required
 ip_address=''
@@ -94,8 +113,6 @@ robot = NiryoOneClient()
 tool_arm_length = 0.12
 test_data_final = []
 message_log = []
-
-
 
 #Create Functions
 
@@ -114,6 +131,7 @@ def split_coordinates():
     global move_three_coordinates
     global move_four_coordinates
     global move_five_coordinates
+    global move_six_coordinates
 
     # Set up the four lists and declare them as lists
     move_one_coordinates = []
@@ -121,6 +139,7 @@ def split_coordinates():
     move_three_coordinates =[]
     move_four_coordinates =[]
     move_five_coordinates = []
+    move_six_coordinates = []
 
     # Now we attempt to undertake the split down of coordinates - for this a try statement is used to enable us to
     # handle an error should it occur. The most likely error is the one in which this function is called before
@@ -135,19 +154,20 @@ def split_coordinates():
                 move_one_coordinates.append((x, y))
             elif 0.21 < y <= 0.41:
                 move_two_coordinates.append((x, y))
-            elif 0.41 < y <= 0.61:
+            elif 0.41 < y <= 0.51:
                 move_three_coordinates.append((x, y))
-            elif 0.61 < y <= 0.81:
+            elif 0.51 < y <= 0.71:
                 move_four_coordinates.append((x, y))
-            elif 0.81 < y <= 1.0:
+            elif 0.71 < y <= 0.91:
                 move_five_coordinates.append((x, y))
+            elif 0.91 < y <= 1.0:
+                move_six_coordinates.append((x, y))
 
     # Here we insert our error handling associated with the try statement. in this instance we are telling it that if
     # an error is experienced then a tkinter message box of the form showerror needs to be called and the message shown.
     except Exception as e:
         tkinter.messagebox.showerror(title='coordinate error', message=('Coordinates missing - please update and try '
                                                                        'again.'))
-
 
 # This function is the one which creates the pop-up asking for the robot IP address. Additionally, it pre-inputs the
 # intial elements of the ip address, based upon the typical format chosen by LSBU in their robotics laboratory.
@@ -426,24 +446,33 @@ def f_connect_attempt():
 
                 # Now we drive the enablement pulse (pin GPIO_1C enum 1) digital state low is 0 and high is 1
                 update_message_box('Setting enablement to stepper')
-                #robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
+                robot.digital_write(RobotPin.GPIO_1C, DigitalState.LOW)
                 # Run this for a period of time (at least 5 microseconds) to ensure drive is enabled before
                 # next instruction
                 time.sleep(min_pulse_delay)
 
                 # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is high)
                 update_message_box('Setting direction on stepper')
-                #robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
+                robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
                 # Run the directional pulse for a minimum time before implementing the next instruction
                 time.sleep(min_pulse_delay)
 
                 # Send signal to the limit switches
                 update_message_box('Sending signal to limits')
+                # The following has been hashed out due to the Niryo One second GPIO board being non-functional
                 #robot.digital_write(RobotPin.GPIO_2A, DigitalState.HIGH)
 
                 # Create a variable to hold our boolean for far and near limits
+                # The following far and near limit pin values were assigned due to issues with the
+                # Niryo one GPIO board.
+                # These are being used to create a driving sequence that would emulate the calibration routine that
+                # would ordinarily have taken place were the GPIO board functional.
+                # If the board is fixed in the future - these assignments should be commented out
+                far_limit_pin = 400
+                near_limit_pin = 400
                 far_limit_trig = False
                 near_limit_trig = False
+
 
                 # Now we step the motor until the far limit switch is triggered
                 # Create a loop that will continuously run until the condition has been met
@@ -460,24 +489,31 @@ def f_connect_attempt():
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
-                    if far_limit_pin == 1:
+                    # If the GPIO board is fixed then un-comment the following code and comment out the next line
+                    # which undertakes a subtraction event from the far limit pin assignment (given earlier)
+                    #far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+                    far_limit_pin -= 1
+                    # If the GPIO board is fixed at a later stage and the limit switches integrated then you need to
+                    # change this if statement to if far_limit_pin == 1:
+                    if far_limit_pin == 0:
                         update_message_box('far limit trig pin state activated')
                         far_limit_trig = True
                         # Now we drive the directional pin GPIO_1B (enum 1) to anti -clockwise (we think this is low)
                         robot.digital_write(RobotPin.GPIO_1B, DigitalState.LOW)
                         # Run the directional pulse for a minimum time before implementing the next instruction
                         time.sleep(min_pulse_delay)
+                        robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
+                        time.sleep(min_pulse_width)
                         near_limit_trig = False
-                    else:
-                        update_message_box('initial else clause kicked in')
-                        far_limit_trig = False
-                        near_limit_trig = True
+                        update_message_box(f'far: {far_limit_trig}, near: {near_limit_trig}')
 
 
                 # Now that we know we have reached the far limit switch, we can work backwards to the near limits switch
                 # Create a loop that will continuously run until the condition has been met
                 while near_limit_trig == False:
+                    update_message_box('starting near trig move')
+                    robot.digital_write(RobotPin.GPIO_1C, DigitalState.LOW)
+                    time.sleep(min_pulse_width)
                     # Drive Pulse On (GPIO_1A is enum 0, High is enum 1)
                     robot.digital_write(RobotPin.GPIO_1A, DigitalState.HIGH)
                     # Run the pulse for the minimum pulse width
@@ -486,10 +522,14 @@ def f_connect_attempt():
                     robot.digital_write(RobotPin.GPIO_1A, DigitalState.LOW)
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
-                    number_of_drive_pulses += 1
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    near_limit_trig = robot.digital_read(RobotPin.GPIO_2B)
-                    if near_limit_trig == 1:
+                    # If the GPIO board is fixed then un-comment the following code and comment out the next line
+                    # which undertakes a subtraction event from the far limit pin assignment (given earlier)
+                    #near_limit_pin = robot.digital_read(RobotPin.GPIO_2B)
+                    near_limit_pin -= 1
+                    # If the GPIO board is fixed at a later stage and the limit switches integrated then you need to
+                    # change this if statement to if near_limit_pin == 1:
+                    if near_limit_pin == 0:
                         near_limit_trig = True
                         # Now we drive the directional pin GPIO_1B (enum 1) to clockwise (we think this is High)
                         robot.digital_write(RobotPin.GPIO_1B, DigitalState.HIGH)
@@ -500,6 +540,7 @@ def f_connect_attempt():
                         drive_revolutions = number_of_drive_pulses / steps_per_revolution
                         drive_distance = drive_revolutions * mm_per_revolution
                         update_message_box(f'linear rail drive distance:  {drive_distance}mm')
+                        robot.digital_write(RobotPin.GPIO_1C, DigitalState.HIGH)
                     else:
 
                         pass
@@ -800,19 +841,32 @@ def f_run_test():
     global linear_dist_3
     global linear_dist_4
     global linear_dist_5
+    global linear_dist_6
+    global linear_positional_movement_log
+
+    # The following needs to be commented out in the event that the Niryo One robot GPIO 2 is fixed
+    # and the limit switched re-integrated into the system
+    linear_positional_movement_log = 0
 
     # Set the variables for the linear rail
     # The first variable moves the linear rail 400mm
+    # From here we can measure the first 200mm of the test bed
     linear_dist_1 = 400
     # The second variable moves the linear rail an additional 200mm (Total now of 600mm)
+    # From here we can measure between 200mm and 400mm along the test bed
     linear_dist_2 = 200
-    # The third variable moves the linear rail an additional 200mm (Total now of 800mm)
-    linear_dist_3 = 200
-    # The fourth variable moves the linear rail and additional 200mm (Total now of 1000mm)
-    linear_dist_4 = 200
-    # The fifth variable moves the linear rail 400mm in the opposite direction
-    # (This will move to 600mm position effectively)
-    linear_dist_5 = -400
+    # The third variable moves the linear rail an additional 100mm (Total now of 700mm)
+    # From here we can measure between 400mm and 500mm along the test bed
+    linear_dist_3 = 100
+    # The fourth variable moves the linear rail -400mm (Total now of 300mm)
+    # From here we swap over and can now measure between 500mm and 700mm along the test bed
+    linear_dist_4 = -400
+    # The fifth variable moves the linear rail 200mm (Total now of 500mm)
+    # From here we can measure between 700mm and 900mm along the test bed
+    linear_dist_5 = 200
+    # The sixth variable moves the linear rail 100mm (Total now of 600mm)
+    # From here we can measure between 900mm and 1000mm along the test bed
+    linear_dist_6 = 100
 
     # We use a try statement to enable us to catch any errors and handle them gracefully.
     try:
@@ -833,6 +887,8 @@ def f_run_test():
         # Update the user that the movement set is complete.
         update_message_box('First instruction set being sent to the robot')
         print('calling first phase')
+        test_start_date_time = datetime.now().strftime('Test started at %H:%M:%S on %d/%m/%Y')
+        update_message_box(test_start_date_time)
         first_phase_move()
         update_message_box('First movement phase completed')
 
@@ -868,6 +924,14 @@ def f_run_test():
         fifth_phase_move()
         update_message_box('Fifth movement phase completed')
 
+        # Update user that the Sixth phase of movements being instructed.
+        # Call on the Sixth phase move function to undertake the Sixth stage.
+        # Update the user that the movement set is complete.
+        update_message_box('Sixth instruction set being sent to the robot')
+        print('calling Sixth phase')
+        sixth_phase_move()
+        update_message_box('Sixth movement phase completed')
+
         # Plot Results From Test
         plot_results_from_test()
         update_message_box('Results plotted from test')
@@ -881,8 +945,18 @@ def f_run_test():
                                                             '2. You have set up the test')
 
 def linear_move_instruction(linear_dist_travel_requirement_mm):
+    # In the current version of the code we have had to edit out the limit trigger switches due to the Niryo One
+    # GPIO pins being non-operational on the second set.
+    # This issue was reported to the laboratory technician, however, as a result we had had to manually set the starting
+    # position and forego using feedback from these limit switches.
+    # The code has been left in but commented out to enable future alteration if the GPIO boards are rectified.
     global near_limit_trig
     global far_limit_trig
+    global linear_positional_movement_log
+
+    # The following needs to be commented out in the event that the Niryo One robot GPIO 2 is fixed
+    # and the limit switched re-integrated into the system
+    linear_positional_movement_log += linear_dist_travel_requirement_mm
 
     if linear_dist_travel_requirement_mm > 0:
         try:
@@ -937,7 +1011,11 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
 
             # Lets update the user as to what is happening
             update_message_box('Start Linear Drive Instruction Loop')
-            far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+            # The following was commented out as we cant get feedback from the limit switches due to issues with the
+            # Niryo one GPIO board.
+            # Instead, we are therefore assigning a static variable
+            #far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+            far_limit_pin = 0
             if far_limit_pin == 0:
                 far_limit_trig = False
 
@@ -952,7 +1030,11 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+                    # The following was commented out as we cant get feedback from the limit switches due to issues with the
+                    # Niryo one GPIO board.
+                    # Instead, we are therefore assigning a static variable
+                    #far_limit_pin = robot.digital_read(RobotPin.GPIO_2C)
+                    far_limit_pin = 0
                     # Increase linear moved steps variable
                     linear_moved_steps += 1
                     if far_limit_pin == 1:
@@ -1022,7 +1104,11 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
             # Lets update the user as to what is happening
             update_message_box('Start Linear Drive Instruction Loop')
 
-            near_limit_pin = robot.digital_read(RobotPin.GPIO_2B)
+            # The following was commented out as we cant get feedback from the limit switches due to issues with the
+            # Niryo one GPIO board.
+            # Instead, we are therefore assigning a static variable
+            #near_limit_pin = robot.digital_read(RobotPin.GPIO_2B)
+            near_limit_pin = 0
             if near_limit_pin == 0:
                 near_limit_trig = False
 
@@ -1037,7 +1123,11 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
                     # Run for the minimum pulse width
                     time.sleep(min_pulse_width)
                     # Check condition of far limit switch and update far_limit_trig if appropriate
-                    near_limit_pin = robot.digital_read(RobotPin.GPIO_2B)
+                    # The following was commented out as we cant get feedback from the limit switches due to issues with the
+                    # Niryo one GPIO board.
+                    # Instead, we are therefore assigning a static variable
+                    #near_limit_pin = robot.digital_read(RobotPin.GPIO_2B)
+                    near_limit_pin = 0
                     # Increase linear moved steps variable
                     linear_moved_steps += 1
                     if near_limit_pin == 1:
@@ -1165,6 +1255,7 @@ def second_phase_move():
     global prog_update_second_phase
     global prog_update_first_phase
     global update_progress
+    global linear_dist_1
     global linear_dist_2
 
     # The following was just used for de-bugging
@@ -1175,7 +1266,7 @@ def second_phase_move():
 
     # Call the linear rail movement phase and pass the movement value as an integer
     linear_move_instruction(linear_dist_2)
-    lin_offset = linear_dist_2 / 1000
+    lin_offset = (linear_dist_1 + linear_dist_2) / 1000
 
     # Inform the user of the stage
     update_message_box('Starting Arm Instruction Set')
@@ -1269,6 +1360,8 @@ def third_phase_move():
     global prog_update_third_phase
     global prog_update_second_phase
     global update_progress
+    global linear_dist_1
+    global linear_dist_2
     global linear_dist_3
 
     # The following was just used for de-bugging
@@ -1279,7 +1372,7 @@ def third_phase_move():
 
     # Call the linear rail movement phase and pass the movement value as an integer
     linear_move_instruction(linear_dist_3)
-    lin_offset = linear_dist_3 / 1000
+    lin_offset = (linear_dist_1 + linear_dist_2 + linear_dist_3) / 1000
 
     # Inform the user of the stage
     update_message_box('Starting Arm Instruction Set')
@@ -1373,6 +1466,9 @@ def fourth_phase_move():
     global prog_update_fourth_phase
     global prog_update_third_phase
     global update_progress
+    global linear_dist_1
+    global linear_dist_2
+    global linear_dist_3
     global linear_dist_4
 
     # The following was just used for de-bugging
@@ -1383,10 +1479,14 @@ def fourth_phase_move():
 
     # Call the linear rail movement phase and pass the movement value as an integer
     linear_move_instruction(linear_dist_4)
-    lin_offset = linear_dist_4 / 1000
+    lin_offset = (linear_dist_1 + linear_dist_2 + linear_dist_3 + linear_dist_4) / 1000
 
     # Inform the user of the stage
     update_message_box('Starting Arm Instruction Set')
+
+    # Set arm to zero position to enable safe change of arm orientation.
+    sleep_joints = [0.0, 0.55, -1.2, 0.0215024563846, -0.296705973, -0.070860367631]
+    robot.move_pose(*sleep_joints)
 
     # Create a local variable used to keep track of our loop status
     phase_four_move_number = 0
@@ -1477,6 +1577,10 @@ def fifth_phase_move():
     global prog_update_fifth_phase
     global prog_update_fourth_phase
     global update_progress
+    global linear_dist_1
+    global linear_dist_2
+    global linear_dist_3
+    global linear_dist_4
     global linear_dist_5
 
     # The following was just used for de-bugging
@@ -1487,7 +1591,7 @@ def fifth_phase_move():
 
     # Call the linear rail movement phase and pass the movement value as an integer
     linear_move_instruction(linear_dist_5)
-    lin_offset = linear_dist_5 / 1000
+    lin_offset = (linear_dist_1 + linear_dist_2 + linear_dist_3 + linear_dist_4 + linear_dist_5) / 1000
 
     # Inform the user of the stage
     update_message_box('Starting Arm Instruction Set')
@@ -1569,6 +1673,117 @@ def fifth_phase_move():
             print(e)
             break
 
+# This function is called by f_run_test in the course of conducting the test procedure
+def sixth_phase_move():
+    # Re-declare the global variables to stop the function from creating local versions
+    global move_six_coordinates
+    global coordinates
+    global test_data_final
+    global tool_arm_length
+    global plate_thickness
+    global number_of_steps
+    global prog_update_fifth_phase
+    global prog_update_sixth_phase
+    global update_progress
+    global linear_dist_1
+    global linear_dist_2
+    global linear_dist_3
+    global linear_dist_4
+    global linear_dist_5
+    global linear_dist_6
+
+    # The following was just used for de-bugging
+    # print('started first phase')
+
+    # Inform the user of the stage
+    update_message_box('Starting Linear Rail Instruction Set')
+
+    # Call the linear rail movement phase and pass the movement value as an integer
+    linear_move_instruction(linear_dist_5)
+    lin_offset = (linear_dist_1 + linear_dist_2 + linear_dist_3 + linear_dist_4 + linear_dist_5 + linear_dist_6) / 1000
+
+    # Inform the user of the stage
+    update_message_box('Starting Arm Instruction Set')
+
+    # Create a local variable used to keep track of our loop status
+    phase_six_move_number = 0
+
+    # Create a for loop that will itterate over the move_one_coordinates list and extract the first value in each tuple
+    # as x and the second as y.
+    for (x, y) in move_five_coordinates:
+
+        # The coordinates require adjustment from the robots frame of reference to the real world.
+        # Additionally, an adjustment is required to account for the tool extending beyond the TCP.
+        # The following if statements attempt to capture and adjust the coordinates accordingly.
+        if x != 0.0 and y > 0.0:
+            x_adjustment = 0
+            y_adjustment = 0
+            if x < 0:
+                adjusted_x = x + x_adjustment
+                adjusted_y = ((y - lin_offset) - y_adjustment)
+            else:
+                adjusted_x = x - x_adjustment
+                adjusted_y = ((y - lin_offset) + y_adjustment)
+        elif (x == 0) and (y != 0):
+            adjusted_x = x
+            adjusted_y = ((y - lin_offset) + tool_arm_length)
+        else:
+            adjusted_x = tool_arm_length
+            adjusted_y = y - lin_offset
+
+        # With the coordinates having been adjusted - we can now try a robot move instruction, capturing any exceptions.
+        try:
+
+            # For each set of coordinates print a message telling the user where the robot is moving to.
+            update_message_box(f'attempting to move to real x: {x} and y: {y}')
+            update_message_box(f'Robot coordinates x: {adjusted_x} and y: {adjusted_y}')
+
+            # Per the API instruction set, we pass the x, y and z coordinates in m.
+            # Instead of directly attributing the values, however, we utilise variables.
+            robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.03, -0.052, 0.855, -1.563)
+
+            # We insert a break period to enable the robot to complete its move before we undertake to send the next
+            # instruction set.
+            time.sleep(2)
+
+            # Here we check to see if there is data coming from the Arduinos Com Port.
+            if arduinoData.inWaiting() > 0:
+                # If there is data then we read the data and assign it to the variable data_bytes.
+                # We then give a break to allow the system to stabilise (we have found this reduces errors).
+                # Then we decode the received data and assign it to the variable datapacket.
+                # Another rest period.
+                # Then attribute the datapacket information to the variable sensor_value as a float.
+                data_bytes = arduinoData.readline()
+                time.sleep(1)
+                datapacket = data_bytes.decode('utf-8').strip('\r\n')
+                time.sleep(1)
+                sensor_value = float(datapacket)
+                time.sleep(1)
+
+            # Update the user as to what the arduino data was.
+            # Append to a tuples list the x and y coordinates along with the sensor data.
+            # Update the local variable to count the itteration number we are on.
+            # Update the progress bar
+            update_message_box(f'Sensor value reads {datapacket}')
+            test_data_final.append((x, y, sensor_value))
+            phase_six_move_number += 1
+            prog_update_sixth_phase = ((phase_six_move_number * 100) / number_of_steps) + prog_update_fifth_phase
+            update_progress.set(prog_update_sixth_phase)
+            time.sleep(1)
+            # robot.move_pose(adjusted_x, adjusted_y, plate_thickness + 0.09, -0.052, 0.715, -1.563)
+
+        # Should there be an error, catch it and inform the user through a showerror messagebox
+        # Additionally, print in teh GUI message box that the test failed.
+        # Break the loop to stop the process.
+        except Exception as e:
+            tkinter.messagebox.showerror(title='test error', message='Test procedure experienced a critical '
+                                                                     'failure - please retry.')
+            update_message_box('Test cycle cancelled due to error')
+            print(e)
+            break
+
+# This function is used to save the results from the test to a CSV -
+# it is activated by the user clicking the Save Test Button in the GUI.
 def f_save_test():
 
     # Re-declare global variables to stop function from creating local ones with the same names
@@ -1596,6 +1811,8 @@ def f_save_test():
     update_message_box(f"Test data saved to: {csv_file_save}")
     save_dialog.destroy()
 
+# This function is used to load previous test results from a CSV -
+# it is activated by the user clicking the Load Previous Test Data Button in the GUI
 def f_load_test():
 
     # Create a new window which we will call the load_dialog
@@ -1642,14 +1859,22 @@ def f_load_test():
         canvas_r.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         load_dialog.destroy()
 
-
-
+# This function is used to safely close down the robot after testing has been completed -
+# it is activated by the user clicking the Close Down Robot button in the GUI
 def f_close():
+    global linear_positional_movement_log
+
     if robot_connected == False:
         close_error = tkinter.messagebox.showerror(title='No connection to close', message='There has been no'
                                                                                            ' connection established'
                                                                                            ' to close.')
     else:
+        # The following needs to be commented out in the event that the Niryo One robot GPIO 2 is fixed
+        # and the limit switched re-integrated into the system
+        update_message_box('Returning Linear Rail')
+        linear_move_instruction(-linear_positional_movement_log)
+
+
         update_message_box('Closing down connection to Niryo One robot')
         sleep_joints = [0.0, 0.55, -1.2, 0.0215024563846, -0.296705973, -0.070860367631]
         # So we send the robot to the sleep_joints position
@@ -1658,8 +1883,10 @@ def f_close():
         robot.set_learning_mode(True)
         # We disconnect from the robot
         robot.quit()
-        print(message_log)
+        #print(message_log)
 
+# This function is used to update the on screen message box as the program is used.
+# Additionally, it is used to keep track of the messages for saving into the message log.
 def update_message_box(message):
 
     # Create a message log
@@ -1680,7 +1907,12 @@ def update_message_box(message):
     # Disable the Text widget to prevent user input
     message_print_box.config(state='disabled')
 
+# This function is used to save the message log to a rich text file.
+# It it activated by the user clicking the Save Message Log button in the GUI
 def f_save_log():
+    # Lets insert the date and dtime at which this log is being saved
+    current_date_time = datetime.now().strftime('Date and Time of Message Log Save = %d/%m/%Y %H:%M:%S')
+    message_log.insert(0,(current_date_time))
 
     # Create a new window which we will call the save_log_dialog
     save_log_dialog = tkinter.Toplevel()
@@ -1705,7 +1937,10 @@ def f_save_log():
 
         update_message_box(f"Message log saved to: {save_log_path}")
 
+    save_log_dialog.destroy()
 
+# This function is used to plot the test results to heat map after the conclusion of a test.
+# It is called by the f_run_test() function.
 def plot_results_from_test():
 
     global test_data_final
