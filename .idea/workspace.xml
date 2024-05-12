@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="I believe - this may be the final push">
+    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -161,7 +160,15 @@
       <option name="project" value="LOCAL" />
       <updated>1715290596096</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals">
+      <option name="closed" value="true" />
+      <created>1715524412025</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1715524412025</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -173,6 +180,7 @@
     <MESSAGE value="Updated the function that plots the graph after the test has been run" />
     <MESSAGE value="updated phase_one_move_instructions with linear rail logic, added messages" />
     <MESSAGE value="I believe - this may be the final push" />
-    <option name="LAST_COMMIT_MESSAGE" value="I believe - this may be the final push" />
+    <MESSAGE value="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals" />
+    <option name="LAST_COMMIT_MESSAGE" value="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals" />
   </component>
 </project>

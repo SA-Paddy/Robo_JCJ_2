@@ -105,6 +105,10 @@ global linear_dist_5
 global linear_dist_6
 global i_ip_address
 global linear_positional_movement_log
+global steps_per_revolution
+global mm_per_revolution
+global min_pulse_width
+global min_pulse_delay
 
 #Set non tkinter variables values where required
 ip_address=''
@@ -113,6 +117,13 @@ robot = NiryoOneClient()
 tool_arm_length = 0.12
 test_data_final = []
 message_log = []
+
+# The following are the characteristics used for the stepper drive controls
+# These have been designed for the Geckodrove 201X
+steps_per_revolution = 200
+mm_per_revolution = 5
+min_pulse_width = 0.5e-6  # 0.5 microseconds
+min_pulse_delay = 3e-6  # 3 microseconds
 
 #Create Functions
 
@@ -347,6 +358,10 @@ def f_connect_attempt():
     global serial_fail_choice
     global near_limit_trig
     global far_limit_trig
+    global steps_per_revolution
+    global mm_per_revolution
+    global min_pulse_width
+    global min_pulse_delay
 
 
     # Define initial values for any variables as required
@@ -418,13 +433,6 @@ def f_connect_attempt():
                 time.sleep(1)
                 robot.move_joints(*sleep_joints)
                 update_message_box('Calibration cycle starting for linear rail')
-
-                # We develop constants to hold our constraints
-                # This just makes it easier to change these variables if we need to
-                steps_per_revolution = 200
-                mm_per_revolution = 5
-                min_pulse_width = 2.5e-6  # 2.5 microseconds
-                min_pulse_delay = 5e-6  # 5 microseconds
 
                 # Now we enable the driver with a signal
                 # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
@@ -953,6 +961,10 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
     global near_limit_trig
     global far_limit_trig
     global linear_positional_movement_log
+    global steps_per_revolution
+    global mm_per_revolution
+    global min_pulse_width
+    global min_pulse_delay
 
     # The following needs to be commented out in the event that the Niryo One robot GPIO 2 is fixed
     # and the limit switched re-integrated into the system
@@ -960,12 +972,6 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
 
     if linear_dist_travel_requirement_mm > 0:
         try:
-            # re-state localised constants to hold our constraints
-            # This just makes it easier to change these variables if we need to
-            steps_per_revolution = 200
-            mm_per_revolution = 5
-            min_pulse_width = 2.5e-6  # 2.5 microseconds
-            min_pulse_delay = 5e-6  # 5 microseconds
 
             # Now we enable the driver with a signal
             # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
@@ -1051,13 +1057,6 @@ def linear_move_instruction(linear_dist_travel_requirement_mm):
         try:
             # Turn the negative passed value into a positive value
             new_lin_val = linear_dist_travel_requirement_mm * -1
-
-            # re-state localised constants to hold our constraints
-            # This just makes it easier to change these variables if we need to
-            steps_per_revolution = 200
-            mm_per_revolution = 5
-            min_pulse_width = 2.5e-6  # 2.5 microseconds
-            min_pulse_delay = 5e-6  # 5 microseconds
 
             # Now we enable the driver with a signal
             # We will be using GPIO_1A (enum 0) for drive, GPIO_1B (enum 1) for direction and GPIO_1C (enum 2)
