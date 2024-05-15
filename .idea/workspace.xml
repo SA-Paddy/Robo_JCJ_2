@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals">
+    <list default="true" id="a1a8896b-bb15-496e-9d9b-48eb828687c9" name="Changes" comment="This updated version moves the Stepper motor control variables to the start of the program for better interaction and handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -168,7 +168,15 @@
       <option name="project" value="LOCAL" />
       <updated>1715524412025</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="This updated version moves the Stepper motor control variables to the start of the program for better interaction and handling">
+      <option name="closed" value="true" />
+      <created>1715532393376</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1715532393376</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -181,6 +189,7 @@
     <MESSAGE value="updated phase_one_move_instructions with linear rail logic, added messages" />
     <MESSAGE value="I believe - this may be the final push" />
     <MESSAGE value="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals" />
-    <option name="LAST_COMMIT_MESSAGE" value="This updated version accounts for the loss of the Niryo One GPIO 2 connection terminals" />
+    <MESSAGE value="This updated version moves the Stepper motor control variables to the start of the program for better interaction and handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="This updated version moves the Stepper motor control variables to the start of the program for better interaction and handling" />
   </component>
 </project>
